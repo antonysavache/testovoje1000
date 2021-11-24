@@ -59,3 +59,24 @@ const App = () => {
 };
 
 export default App;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.subscribe({
+    next: () => {
+      if (timerOn === true) {
+        setTime((prev) => prev + 1000);
+      }
+    },
+  });
