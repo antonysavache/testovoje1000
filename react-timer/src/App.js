@@ -1,93 +1,77 @@
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  useMemo,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Observable, Subject } from 'rxjs';
-import {
-  map,
-  buffer,
-  debounceTime,
-  filter,
-  takeUntil,
-} from 'rxjs/operators';
-
+import { takeUntil } from 'rxjs/operators';
 
 const App = () => {
-  const [timerOn, setTimerOn] = React.useState(false);
-  const [time, setTime] = React.useState(0);
+  const [timerOn, setTimerOn] = useState(false);
+  const [time, setTime] = useState(0);
 
   const stop$ = useMemo(() => new Subject(), []);
-  const click$ = useMemo(() => new Subject(), []);
+
+  let countClicks = 0;
+  function wait(e) {
+    if (countClicks) {
+      clearTimeout(countClicks);
+      countClicks = 0;
+    }
+
+    if (e.detail === 1) {
+      countClicks = setTimeout(function () {}, 300);
+    } else if (e.detail === 2) {
+      setTimerOn(false);
+    }
+  }
 
   const start = () => {
-      setTimerOn(true)
-    };
-  
-    const stop = useCallback(() => {
-      setTimerOn(false)
-    }, []);
-  
-    const reset = useCallback(() => {
-      setTime(0);
-    }, []);
-  
-    const wait = useCallback(() => {
-      click$.next();
-      click$.next();
-      setTimerOn(false)
-    }, []);
+    setTimerOn(true);
+  };
+
+  const stop = useCallback(() => {
+    setTimerOn(false);
+    setTime(0);
+  }, []);
+
+  const reset = useCallback(() => {
+    setTime(0);
+    setTimerOn(true);
+  }, []);
 
   useEffect(() => {
-    const doubleClick$ = click$.pipe(
-      buffer(click$.pipe(debounceTime(300))),
-      map((list) => list.length),
-      filter((value) => value >= 2),
-    
-    );
-    const timer$ = new Observable((observer) => {
+    const timer$ = new Observable(observer => {
       let count = 0;
-      const intervalId = setInterval(() => {
-        observer.next(count += 1);
+      const intlId = setInterval(() => {
+        observer.next((count += 1));
         console.log(count);
       }, 1000);
 
       return () => {
-        clearInterval(intervalId);
+        clearInterval(intlId);
       };
     });
 
-    const subscribtion$ = timer$
-      .pipe(takeUntil(doubleClick$))
-      .pipe(takeUntil(stop$))
-      .subscribe({
-        next: () => {
-          if (timerOn === true) {
-            setTime((prev) => prev + 1000);
-          }
-        },
-      });
-
-    return (() => {
-      subscribtion$.unsubscribe();
+    const subscribtion$ = timer$.pipe(takeUntil(stop$)).subscribe({
+      next: () => {
+        if (timerOn === true) {
+          setTime(prev => prev + 1000);
+        }
+      },
     });
+
+    return () => {
+      subscribtion$.unsubscribe();
+    };
   }, [timerOn]);
 
   return (
-      <section className="stopwatch">
+    <section>
       <span>{('0' + Math.floor((time / 3600000) % 60)).slice(-2)}:</span>
       <span>{('0' + Math.floor((time / 60000) % 60)).slice(-2)}:</span>
       <span>{('0' + Math.floor((time / 1000) % 60)).slice(-2)}</span>
-    <button className="start-button" onClick={start}>
-      Start
-    </button>
-    <button className="stop-button" onClick={stop}>
-      Stop
-    </button>
-    <button onClick={reset}>Reset</button>
-    <button onClick={wait}>Wait</button>
-  </section>
+      <button onClick={start}>Start</button>
+      <button onClick={stop}>Stop</button>
+      <button onClick={reset}>Reset</button>
+      <button onClick={wait}>Wait</button>
+    </section>
   );
 };
 

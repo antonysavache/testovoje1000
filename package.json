@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "controls": "^0.7.5",
+    "prop-types": "^15.7.2",
     "rxjs": "^7.4.0"
   }
 }
